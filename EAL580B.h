@@ -13,6 +13,19 @@ class EAL580B
 {
     public:
 
+        // struct ParameterStruct
+        // {
+            
+        // }parameters;
+
+        struct ValueStruct
+        {
+            uint16_t pos2Bytes;
+            uint32_t pos;
+            uint32_t posRaw;
+            int32_t vel;
+        }value;
+
         // Set slave num/ID in ethercat slaves detected.
         void setSlaveID(uint32_t ID_num);
 
@@ -125,9 +138,14 @@ class EAL580B
         uint32_t getPositionRawValuePDO(void);
 
         /**
-         * Position data behavior relates to the rotation direction of the shaft of the encoder when looking at the flange.
-         * If dir is 0 the position value increases if the shaft is rotated clockwise (looking at the shaft).
-         * If dir is 1 the position value increases if the shaft is rotated counterclockwise (looking at the shaft).
+         * @brief Position data behavior relates to the rotation direction of the shaft of the encoder when looking at the flange.
+         * @param dir is direction behavior. 0: CW, 1:CCW     
+         * @note 
+         * - If dir be 0 the position value increases if the shaft is rotated clockwise (looking at the shaft).  
+         *    
+         * - If dir be 1 the position value increases if the shaft is rotated counterclockwise (looking at the shaft). 
+         *    
+         * - If dir be more than 1 value, function return false.   
          * @return true if successed.
          *  */  
         bool setRotationDirection(uint8_t dir);
@@ -196,7 +214,11 @@ class EAL580B
 
         /**
          * @brief Set the PresetValue object that contains the desired absolute preset value. Writing this object executes a preset.
+         * The encoder internally calculates a preset offset value which is being stored in a non-volatile memory
+         * (no store command via CoE object 0x1010 required).
+         * @param value is desired value for position at current position.  
          * @return true if successed.
+         * @warning Use this function after setting direction rotation of encoder. Otherwise it maybe not correct set.
          *  */  
         bool setPresetValue(uint32_t value);
 
@@ -211,6 +233,10 @@ class EAL580B
          * @note config_num:4 -> PDOmap = {PositionValue2Bytes}  
          *  */ 
         bool autoSetup(uint32_t ID, uint8_t config_num);
+
+        bool updateStatesPDO(void);
+
+        bool updateStatesSDO(void);
 
     private:
 
@@ -230,6 +256,17 @@ class EAL580B
         uint8_t _TxMapOffset_SensorTemperature;
         uint8_t _TxMapOffset_PositionValue;
         uint8_t _TxMapOffset_PositionRawValue;
+
+        /*
+        _TxMapFlag indexes :
+        0: SystemTime
+        1: PositionValue2Bytes
+        2: SpeedValue4Bytes
+        3: SensorTemperature
+        4: PositionValue
+        5: PositionRawValue
+        */
+        uint8_t _TxMapFlag[6] = {0, 0, 0, 0, 0, 0};
 
         /**
          * @brief Set TxPDO object vector.

@@ -87,6 +87,13 @@ uint16_t EAL580B::getTxPDO_rank(void)
 
 bool EAL580B::_setTxPDO(uint8_t num_enteries, uint32_t* mapping_entry)
 {
+    _TxMapFlag[0] = 0;
+    _TxMapFlag[1] = 0;
+    _TxMapFlag[2] = 0;
+    _TxMapFlag[3] = 0;
+    _TxMapFlag[4] = 0;
+    _TxMapFlag[5] = 0;
+
     // **Note: TxPDO of encoder is just read only access. So it must be at comment some bellow sections:
 
     // ------------------------------------------------------
@@ -146,26 +153,32 @@ bool EAL580B::_setTxPDO(uint8_t num_enteries, uint32_t* mapping_entry)
         {
             case MapValue_SystemTime:
                 _TxMapOffset_SystemTime = offset;
+                _TxMapFlag[0] = 1;
                 offset += 4;
             break;
             case MapValue_PositionValue2Bytes:
                 _TxMapOffset_PositionValue2Bytes = offset;
+                _TxMapFlag[1] = 1;
                 offset += 2;
             break;
             case MapValue_SpeedValue4Bytes:
                 _TxMapOffset_SpeedValue4Bytes = offset;
+                _TxMapFlag[2] = 1;
                 offset += 4;
             break;
             case MapValue_SensorTemperature:
                 _TxMapOffset_SensorTemperature = offset;
+                _TxMapFlag[3] = 1;
                 offset += 4;
             break;
             case MapValue_PositionValue:
                 _TxMapOffset_PositionValue = offset;
+                _TxMapFlag[4] = 1;
                 offset += 4;
             break;
             case MapValue_PositionRawValue:
                 _TxMapOffset_PositionRawValue = offset;
+                _TxMapFlag[5] = 1;
                 offset += 4;
             break;
             default:
@@ -220,6 +233,11 @@ uint16_t EAL580B::getPositionValue2BytesSDO(void)
 
 uint16_t EAL580B::getPositionValue2BytesPDO(void)
 {
+    if(_TxMapFlag[1] == 0)
+    {
+        return 0;
+    }
+
     // Access the process data inputs for the specified slave
     uint8 *inputs = ec_slave[_slaveID].inputs;
     
@@ -244,6 +262,11 @@ int32_t EAL580B::getSpeedValue4BytesSDO(void)
 
 int32_t EAL580B::getSpeedValue4BytesPDO(void)
 {
+    if(_TxMapFlag[2] == 0)
+    {
+        return 0;
+    }
+
     // Access the process data inputs for the specified slave
     uint8 *inputs = ec_slave[_slaveID].inputs;
     
@@ -279,6 +302,11 @@ int32_t EAL580B::getSensorTemperatureSDO(void)
 
 int32_t EAL580B::getSensorTemperaturePDO(void)
 {
+    if(_TxMapFlag[3] == 0)
+    {
+        return 0;
+    }
+
     // Access the process data inputs for the specified slave
     uint8 *inputs = ec_slave[_slaveID].inputs;
     
@@ -303,6 +331,11 @@ uint32_t EAL580B::getPositionValueSDO(void)
 
 uint32_t EAL580B::getPositionValuePDO(void)
 {
+    if(_TxMapFlag[4] == 0)
+    {
+        return 0;
+    }
+
     // Access the process data inputs for the specified slave
     uint8 *inputs = ec_slave[_slaveID].inputs;
     
@@ -327,6 +360,11 @@ uint32_t EAL580B::getPositionRawValueSDO(void)
 
 uint32_t EAL580B::getPositionRawValuePDO(void)
 {
+    if(_TxMapFlag[5] == 0)
+    {
+        return 0;
+    }
+
     // Access the process data inputs for the specified slave
     uint8 *inputs = ec_slave[_slaveID].inputs;
     
@@ -553,7 +591,25 @@ bool EAL580B::autoSetup(uint32_t ID, uint8_t config_num)
     return TRUE;
 }
 
+bool EAL580B::updateStatesPDO(void)
+{
+    value.pos2Bytes = getPositionValue2BytesPDO();
+    value.pos = getPositionValuePDO();
+    value.posRaw = getPositionRawValuePDO();
+    value.vel = getSpeedValue4BytesPDO();
 
+    return true;
+}
+
+bool EAL580B::updateStatesSDO(void)
+{
+    value.pos2Bytes = getPositionValue2BytesSDO();
+    value.pos = getPositionValueSDO();
+    value.posRaw = getPositionRawValueSDO();
+    value.vel = getSpeedValue4BytesSDO();
+
+    return true;
+}
 
 
 
