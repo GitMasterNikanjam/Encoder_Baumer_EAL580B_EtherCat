@@ -7,27 +7,108 @@
 #include <thread>                   // For thread programming
 #include "ethercat.h"               // EtherCAT functionality 
 
+using namespace std;
+
 // #################################################################################
 
+namespace EAL580B_Namespace
+{
+    #define SPD_UNIT_STEP_1000MS            0x00
+    #define SPD_UNIT_STEP_100MS             0x01
+    #define SPD_UNIT_STEP_10MS              0x02
+    #define SPD_UNIT_RPM                    0x03
+}
+
+// #################################################################################
 class EAL580B
 {
     public:
 
-        // struct ParameterStruct
-        // {
-            
-        // }parameters;
+        /// Last error accured for object.
+        std::string errorMessage;
+
+        struct ParameterStruct
+        {
+            /**
+             * @brief Speed measurements unit. 
+             * 
+             * Configure the speed calculation which affects the speed value of the encoder
+             * @note
+             * Config value Range:
+             * 
+             * 0x00: steps/1000 ms
+             * 
+             * 0x01: steps/100 ms
+             * 
+             * 0x02: steps/10 ms
+             * 
+             * 0x03: revolutions per Minute (rpm)
+             */
+            uint8_t SPD_UNIT;
+
+            /**
+             * @brief Encoder scaled gain value for scaled position output calcultation. 
+             * This parameter affects on the (sclaed) position value.
+             * @note
+             * - Scaled_position = GEAR_RATIO * NonScaled_position    
+             * 
+             * - If GEAR_RATIO be zero value, it means the gear factor functionality is inactive.
+             */
+            float GEAR_RATIO;
+
+            /**
+             * @brief Ethercat slave id number. 
+             * @note 
+             * - The default value is -1, it means not assigned any id.  
+             * 
+             * - The value more than 0 is acceptable. 
+             */
+            int ETHERCAT_ID;
+
+            /**
+             * @brief TXPDO map configuration type.
+             * @note vlaue:1 -> PDOmap = {PositionValue}   
+             * @note value:2 -> PDOmap = {PositionValue, SpeedValue4Bytes}     
+             * @note value:3 -> PDOmap = {PositionRawValue}  
+             * @note value:4 -> PDOmap = {PositionValue2Bytes}  
+             */
+            uint8_t PDOMAP_CONFIG_TYPE;
+
+            /**
+             * @brief Direction behavior. 0: CW, 1:CCW     
+             * @note - If dir be 0 the position value increases if the shaft is rotated clockwise (looking at the shaft). 
+             * @note - If dir be 1 the position value increases if the shaft is rotated counterclockwise (looking at the shaft).  
+             */
+            uint8_t ROTATION_DIR;
+
+        }parameters;
 
         struct ValueStruct
         {
-            uint16_t pos2Bytes;
-            uint32_t pos;
-            uint32_t posRaw;
-            int32_t vel;
+            uint16_t pos2BytesStep;
+            uint32_t posStep;
+            uint32_t posRawStep;
+            int32_t velStep;
+            float pos2BytesDeg;
+            float posDeg;
+            float posRawDeg;
+            float velDegSec;
         }value;
 
-        // Set slave num/ID in ethercat slaves detected.
-        void setSlaveID(uint32_t ID_num);
+        /// @brief  Default constructor. Init parameters and values.
+        EAL580B();
+
+        /**
+         * @brief Init object. Check parameters. Set and config parameters.
+         * @return true if successed.
+         */
+        bool init(void);
+
+        /**
+         * @brief Check parameters validation.
+         * @return true if successed.
+         */
+        bool checkParameters(void);
 
         /**
          * Use Sync Manager for assign certain TXPDO.
@@ -52,7 +133,7 @@ class EAL580B
         bool saveParamsAll(void);
 
         /**
-         * Restore and load all default parameters.
+         * @brief Restore and load all default parameters.
          * If the device later is powered off and on again the default parameters are written
          * @return true if successed.
          *  */ 
@@ -158,14 +239,15 @@ class EAL580B
         bool setScalingFunctionControl(bool enable);
 
         /**
-         * Get the maximum singleturn resolution in steps.
+         * @brief Get the maximum singleturn resolution in steps.
          * @return 0 if not successed.
          *  */ 
         uint32_t getSingleTurnResolution(void);
 
         /**
-         * Get total measuring range (TMR).
-         * This is maximum value for PositionValue4byte and PositionValue2byte.
+         * @brief Get total measuring range (TMR).
+         * This is the maximum value for PositionValue4byte and PositionValue2byte.
+         * @return 0 if not successed.
          *  */ 
         uint32_t getTotalMeasuringRange(void);
 
@@ -191,10 +273,9 @@ class EAL580B
          * @note - For the “numerator” the following restrictions apply:   
          * @note - EAL580 MT encoder ST13 MT16, optical: numerator <= 8192   
          * @note - EAL580 MT encoder ST18 MT13, optical: numerator <= 4096   
-         * @note - EAM580 MT encoder ST14 MT16, magnetic: numerator <= 16384   
-         *
-         * @note ### Measuring units per revolution = total measuring range ∗ (denominator / numerator)  
-         * 
+         * @note - EAM580 MT encoder ST14 MT16, magnetic: numerator <= 16384    
+         *   
+         * - Measuring units per revolution = total measuring range ∗ (denominator / numerator)  
          * @return true if successed.
          */
         bool setGearFactorScale(uint32_t numerator, uint32_t denominator);
@@ -216,32 +297,36 @@ class EAL580B
          * @brief Set the PresetValue object that contains the desired absolute preset value. Writing this object executes a preset.
          * The encoder internally calculates a preset offset value which is being stored in a non-volatile memory
          * (no store command via CoE object 0x1010 required).
-         * @param value is desired value for position at current position.  
+         * @param value is desired step value for position at current position.  
          * @return true if successed.
          * @warning Use this function after setting direction rotation of encoder. Otherwise it maybe not correct set.
          *  */  
-        bool setPresetValue(uint32_t value);
+        bool setPresetValueStep(uint32_t value);
+
+        bool setPresetValueDeg(float value);
 
         /**
-         * Automatic init and setup of driver.
-         * @param ID: slave num/ID in ethercat slaves detected.
-         * @param config_num: Configuration type.
-         * 
-         * @note config_num:1 -> PDOmap = {PositionValue}   
-         * @note config_num:2 -> PDOmap = {PositionValue, SpeedValue4Bytes}     
-         * @note config_num:3 -> PDOmap = {PositionRawValue}  
-         * @note config_num:4 -> PDOmap = {PositionValue2Bytes}  
-         *  */ 
-        bool autoSetup(uint32_t ID, uint8_t config_num);
+         * @brief Update value variables in PDO mode. 
+         */
+        void updateValuesPDO(void);
 
-        bool updateStatesPDO(void);
-
-        bool updateStatesSDO(void);
+        /**
+         * @brief Update value variables in SDO mode.
+         */
+        void updateValuesSDO(void);
 
     private:
+        
+        // Max one revolution steps value for encoder.
+        uint32_t _oneRevolutionMaxSteps;       
 
-        // ID for salve number that used in simple_ethercat library.
-        int _slaveID;
+        // Max total measuring range value for encoder.
+        uint32_t _totalMeasuringMaxRange;
+
+        // speed conversion gain for convert step unit to deg/sec.
+        float _velConStep2DegSec;
+
+        uint32_t _virtualOffset;
 
         // Access the process data inputs.
         uint8 *_inputs;
@@ -287,6 +372,9 @@ class EAL580B
          * @return true if successed. 
          *  */ 
         bool _setTxPDO(uint8_t num_enteries, uint32_t* mapping_entry);
+
+        // Update values for convert values to deg unit for angles and deg/sec unit for speed.
+        void _updateValuesConversion(void);
 
 };
 
