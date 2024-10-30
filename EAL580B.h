@@ -89,10 +89,10 @@ class EAL580B
             uint32_t posStep;
             uint32_t posRawStep;
             int32_t velStep;
-            float pos2BytesDeg;
-            float posDeg;
-            float posRawDeg;
-            float velDegSec;
+            double pos2BytesDeg;
+            double posDeg;
+            double posRawDeg;
+            double velDegSec;
         }value;
 
         /// @brief  Default constructor. Init parameters and values.

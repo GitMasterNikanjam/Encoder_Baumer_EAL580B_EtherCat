@@ -361,15 +361,15 @@ bool EAL580B::_setTxPDO(uint8_t num_enteries, uint32_t* mapping_entry)
 
 void EAL580B::_updateValuesConversion(void)
 {
-    value.pos2BytesDeg = 360.0 * (float)value.pos2BytesStep / (float)_oneRevolutionMaxSteps;
-    value.posDeg = 360.0 * ((float)value.posStep - (float)_virtualOffset) / (float)_oneRevolutionMaxSteps;
-    value.posRawDeg = 360.0 * (float)value.posRawStep / (float)_oneRevolutionMaxSteps;
-    value.velDegSec = _velConStep2DegSec * (float)value.velStep;
+    value.pos2BytesDeg = 360.0 * (double)value.pos2BytesStep / (double)_oneRevolutionMaxSteps;
+    value.posDeg = 360.0 * ((double)value.posStep - (double)_virtualOffset) / (double)_oneRevolutionMaxSteps;
+    value.posRawDeg = 360.0 * (double)value.posRawStep / (double)_oneRevolutionMaxSteps;
+    value.velDegSec = _velConStep2DegSec * (double)value.velStep;
 
     if(parameters.GEAR_RATIO > 0)
     {
-        value.posDeg =  parameters.GEAR_RATIO * value.posDeg;
-        value.velDegSec = parameters.GEAR_RATIO * value.velDegSec;
+        value.posDeg =  (double)parameters.GEAR_RATIO * value.posDeg;
+        value.velDegSec = (double)parameters.GEAR_RATIO * value.velDegSec;
     }
 }
 
