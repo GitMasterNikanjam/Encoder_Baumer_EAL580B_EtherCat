@@ -303,6 +303,14 @@ class EAL580B
          *  */  
         bool setPresetValueStep(uint32_t value);
 
+        /**
+         * @brief Set the PresetValue object that contains the desired absolute preset value. Writing this object executes a preset.
+         * The encoder internally calculates a preset offset value which is being stored in a non-volatile memory
+         * (no store command via CoE object 0x1010 required).
+         * @param value is desired angle value[deg] for position at current position.  
+         * @return true if successed.
+         * @warning Use this function after setting direction rotation of encoder. Otherwise it maybe not correct set.
+         *  */  
         bool setPresetValueDeg(float value);
 
         /**

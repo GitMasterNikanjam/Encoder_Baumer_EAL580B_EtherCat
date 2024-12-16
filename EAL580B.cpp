@@ -751,9 +751,9 @@ bool EAL580B::setPresetValueStep(uint32_t value)
 
 bool EAL580B::setPresetValueDeg(float value)
 {
-    float valueStep;
+    double valueStep;
 
-    valueStep = (float)_oneRevolutionMaxSteps * (float)value / 360.0;
+    valueStep = (double)_oneRevolutionMaxSteps * (double)value / 360.0;
 
     if(parameters.GEAR_RATIO > 0)
     {
